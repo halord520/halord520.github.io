@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>关注抖音@哈罗德</title>
+    <style>
+        body { margin:0; padding:20px; text-align:center; font-family: sans-serif; }
+        .avatar { width:90px; height:90px; border-radius:50%; margin:20px auto; display:block; }
+        h2 { margin:10px 0 0; }
+        .btn {
+            display: inline-block;
+            background: #fe2c55;
+            color: #fff;
+            font-size: 18px;
+            padding: 12px 50px;
+            border-radius: 30px;
+            text-decoration: none;
+            margin-top: 30px;
+            border: none;
+            cursor: pointer;
+        }
+        .tip { color: #888; margin-top: 25px; font-size: 14px; display: none; }
+        .tip b { color: #000; }
+    </style>
+</head>
+<body>
+    <img class="avatar" src="https://picsum.photos/200/200" alt="头像" id="avatar">
+    <h2 id="nickname">@哈罗德</h2>
+    <p style="color:#666;">抖音号：2014061759</p>
+
+    <button class="btn" onclick="goFollow()">打开抖音关注</button>
+    <div class="tip" id="guideTip">
+        请点击右上角「...」选择 <b>在浏览器中打开</b><br>或复制抖音号 <b>2014061759</b> 去搜索关注
+    </div>
+
+    <script>
+        const USER_SEC_UID = 'MS4wLjABAAAA61AzlK1Ef1uLVsNTieOMAT9Th57QEucVyvMc-OV5dZM';  
+        const DOUYIN_ID = '2014061759';              
+
+        // 判断当前环境
+        const ua = navigator.userAgent;
+        const isWechat = /MicroMessenger/i.test(ua);
+        const isDouyin = /aweme/i.test(ua);
+        const isAlipay = /AlipayClient/i.test(ua);
+
+        function goFollow() {
+            // 抖音内：直接跳转到用户主页（无法一键关注，但主页有关注按钮）
+            if (isDouyin) {
+                window.location.href = 'https://v.douyin.com/'; // 或用 scheme 打开主页
+                // 更稳妥的是用抖音内部链接：https://www.douyin.com/user/USER_SEC_UID
+                // 但是否能直接打开关注页取决于版本
+                window.location.href = 'snssdk1128://user/profile/' + USER_SEC_UID;
+                return;
+            }
+
+            // 微信/支付宝/其他浏览器：尝试唤起抖音
+            const schemeUrl = 'snssdk1128://user/profile/' + USER_SEC_UID;
+            const fallbackUrl = 'https://www.douyin.com/user/' + USER_SEC_UID; // 网页版主页
+
+            // 创建隐藏 iframe 唤起
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = schemeUrl;
+            document.body.appendChild(iframe);
+
+            const start = Date.now();
+            setTimeout(function () {
+                document.body.removeChild(iframe);
+                // 如果超过2秒页面没隐藏，说明唤起失败
+                if (Date.now() - start < 2500 && !document.hidden) {
+                    // 显示引导提示
+                    document.getElementById('guideTip').style.display = 'block';
+                    // 如果是微信，额外提醒“在浏览器打开”
+                    if (isWechat) {
+                        document.getElementById('guideTip').innerHTML =
+                            '请点击右上角「...」选择 <b>在浏览器中打开</b><br>或复制抖音号 <b>' + DOUYIN_ID + '</b> 去搜索关注';
+                    }
+                    // 也可尝试跳转到网页版主页作为降级
+                    // window.location.href = fallbackUrl;
+                }
+            }, 2000);
+        }
+
+        // 页面加载时可以显示用户头像昵称，如果有动态接口就用，没有就写死
+        // 这里示例直接写死了图片和昵称，你替换 src 和文本就行
+        document.getElementById('avatar').src = 'https://picsum.photos/200/200';  // 替换
+        document.getElementById('nickname').innerText = '@哈罗德'; // 替换
+    </script>
+</body>
+</html>
