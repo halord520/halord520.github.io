@@ -44,43 +44,40 @@
         const isDouyin = /aweme/i.test(ua);
         const isAlipay = /AlipayClient/i.test(ua);
 
+        // 填入昵称头像（可写死）
+        document.getElementById('avatar').src = 'https://picsum.photos/200/200';
+        document.getElementById('nickname').innerText = '@哈罗德';
+
         function goFollow() {
-            // 抖音内：直接跳转到用户主页（无法一键关注，但主页有关注按钮）
+            // 抖音内：跳转到用户主页（需要手动点关注）
             if (isDouyin) {
-                window.location.href = 'https://v.douyin.com/'; // 或用 scheme 打开主页
-                // 更稳妥的是用抖音内部链接：https://www.douyin.com/user/USER_SEC_UID
-                // 但是否能直接打开关注页取决于版本
-                window.location.href = 'snssdk1128://user/profile/' + USER_SEC_UID;
+                window.location.href = 'https://www.douyin.com/user/' + USER_SEC_UID;
                 return;
             }
 
-            // 微信/支付宝/其他浏览器：尝试唤起抖音
-            const schemeUrl = 'snssdk1128://user/profile/' + USER_SEC_UID;
-            const fallbackUrl = 'https://www.douyin.com/user/' + USER_SEC_UID; // 网页版主页
+            // 其他环境：尝试唤起抖音 App，失败则跳转网页版主页
+            const scheme = 'snssdk1128://user/profile/' + USER_SEC_UID;
+            const fallback = 'https://www.douyin.com/user/' + USER_SEC_UID;
 
-            // 创建隐藏 iframe 唤起
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = schemeUrl;
-            document.body.appendChild(iframe);
+            // 使用一个隐藏的 <a> 标签触发 scheme（更不容易被拦截）
+            const link = document.createElement('a');
+            link.href = scheme;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
-            const start = Date.now();
-            setTimeout(function () {
-                document.body.removeChild(iframe);
-                // 如果超过2秒页面没隐藏，说明唤起失败
-                if (Date.now() - start < 2500 && !document.hidden) {
-                    // 显示引导提示
-                    document.getElementById('guideTip').style.display = 'block';
-                    // 如果是微信，额外提醒“在浏览器打开”
-                    if (isWechat) {
-                        document.getElementById('guideTip').innerHTML =
-                            '请点击右上角「...」选择 <b>在浏览器中打开</b><br>或复制抖音号 <b>' + DOUYIN_ID + '</b> 去搜索关注';
-                    }
-                    // 也可尝试跳转到网页版主页作为降级
-                    // window.location.href = fallbackUrl;
-                }
+            // 如果 2 秒内没有离开页面，说明唤起失败，跳转到网页版
+            const timer = setTimeout(function() {
+                window.location.href = fallback;
             }, 2000);
+
+            // 如果页面进入后台（说明成功唤起了 App），清除定时器
+            window.addEventListener('pagehide', function() {
+                clearTimeout(timer);
+            });
         }
+    
 
         // 页面加载时可以显示用户头像昵称，如果有动态接口就用，没有就写死
         // 这里示例直接写死了图片和昵称，你替换 src 和文本就行
